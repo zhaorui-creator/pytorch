@@ -6034,6 +6034,10 @@ int_vals = list(range(-5, 5, 1)) + [mx_int + 5, mx_int * 2, mn_int - 5, mn_int *
             checkMathWrap(op, 2)
 
         checkMath("modf", 1, ret_type="Tuple[float, float]")
+        checkMath("frexp", 1, ret_type="Tuple[float, int]")
+        checkMath("isnan", 1, ret_type="bool")
+        checkMath("isfinite", 1, ret_type="bool")
+        checkMath("isinf", 1, ret_type="bool")
         checkMath("pow", 2, is_float=False, ret_type="int")
         checkMath("pow", 2, is_float=True, ret_type="float")
         if not PY2:
