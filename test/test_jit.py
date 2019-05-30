@@ -12200,8 +12200,8 @@ a")
                 s.isidentifier(), s.istitle(), s.isprintable()
 
         def test_str_to(s):
-            # type: (str) -> Tuple[str, str, str, str]
-            return s.upper(), s.lower(), s.capitalize(), s.title()
+            # type: (str) -> Tuple[str, str, str, str, str]
+            return s.upper(), s.lower(), s.capitalize(), s.title(), s.swapcase()
 
         def test_str_strip(s):
             # type: (str) -> Tuple[str, str, str]
@@ -12322,6 +12322,25 @@ a")
               "hello".endswith("l", -8, 4)
             )
         self.checkScript(test_endswith, ())
+        def test_startswith():
+            # type: () -> Tuple[bool, bool, bool, bool, bool, bool, bool, bool, bool, bool, bool, bool, bool, bool]
+            return (
+              "hello".startswith("lo"),
+              "hello".startswith("lo", 0),
+              "hello".startswith("lo", -2),
+              "hello".startswith("lo", -8),
+              "hello".startswith("lo", 0, -5),
+              "hello".startswith("lo", -2, 3),
+              "hello".startswith("lo", -8, 4),
+              "hello".startswith("l"),
+              "hello".startswith("l", 0),
+              "hello".startswith("l", -2),
+              "hello".startswith("l", -8),
+              "hello".startswith("l", 0, -5),
+              "hello".startswith("l", -2, 3),
+              "hello".startswith("l", -8, 4)
+            )
+        self.checkScript(test_startswith, ())
         def test_expandtabs():
             # type: () -> Tuple[str, str, str, str, str, str]
             return (
@@ -12401,7 +12420,73 @@ a")
             )
         self.checkScript(test_replace, ())
 
-        # TODO test exceptions correctly for test_index
+        def test_partition():
+            # type: () -> Tuple[Tuple[str,str,str], Tuple[str,str,str], Tuple[str,str,str], Tuple[str,str,str], Tuple[str,str,str], Tuple[str,str,str], Tuple[str,str,str]]
+            return (
+              "hello123abc".partition("llo"),
+              "ff".partition("f"),
+              "abc123".partition("a"),
+              "aaaaaa".partition("testing"),
+              "bbb".partition("a"),
+              "ccc".partition("ccc"),
+              "cc".partition("ccc"),
+            )
+        self.checkScript(test_partition, ())
+
+        def test_rpartition():
+            # type: () -> Tuple[Tuple[str,str,str], Tuple[str,str,str], Tuple[str,str,str], Tuple[str,str,str], Tuple[str,str,str], Tuple[str,str,str], Tuple[str,str,str]]
+            return (
+              "hello123abc".rpartition("llo"),
+              "ff".rpartition("f"),
+              "abc123".rpartition("a"),
+              "aaaaaa".rpartition("testing"),
+              "bbb".rpartition("a"),
+              "ccc".rpartition("ccc"),
+              "cc".rpartition("ccc"),
+            )
+        self.checkScript(test_rpartition, ())
+
+        def test_split():
+            # type: () -> Tuple[List[str], List[str], List[str], List[str], List[str], List[str], List[str], List[str], List[str]]
+            return (
+              "a a a a a".split(),
+              " a a a a a ".split(" "),
+              "a a a a a ".split(" ", 10),
+              "a a a a a ".split(" ", -1),
+              "a a a a a ".split(" ", 3),
+              " a a a a a ".split("*"),
+              " a*a a*a a".split("*"),
+              " a*a a*a a ".split("*", -1),
+              " a*a a*a a ".split("a*", 10),
+            )
+        self.checkScript(test_split, ())
+
+        def test_rsplit():
+            # type: () -> Tuple[List[str], List[str], List[str], List[str], List[str], List[str], List[str], List[str], List[str]]
+            return (
+              "a a a a a".rsplit(),
+              " a a a a a ".rsplit(" "),
+              "a a a a a ".rsplit(" ", 10),
+              "a a a a a ".rsplit(" ", -1),
+              "a a a a a ".rsplit(" ", 3),
+              " a a a a a ".rsplit("*"),
+              " a*a a*a a ".rsplit("*"),
+              " a*a a*a a ".rsplit("*", -1),
+              " a*a a*a a".rsplit("a*", 10),
+            )
+        self.checkScript(test_rsplit, ())
+
+        def test_splitlines():
+            # type: () -> Tuple[ List[str], List[str], List[str], List[str], List[str], List[str] ]
+            return (
+              "hello\ntest".splitlines(),
+              "hello\n\ntest\n".splitlines(),
+              "hello\ntest\n\n".splitlines(),
+              "hello\vtest".splitlines(),
+              "hello\v\f\ntest".splitlines(),
+              "hello\ftest".splitlines(),
+            )
+        self.checkScript(test_splitlines, ())
 
         def test_str_cmp(a, b):
             # type: (str, str) -> Tuple[bool, bool, bool, bool, bool, bool]

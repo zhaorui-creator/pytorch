@@ -2154,6 +2154,32 @@ RegisterOperators reg2({
         }),
 
     Operator(
+        "aten::startswith(str self, str substr, int start=0, int end=-1) -> bool",
+        [](Stack& stack) {
+          auto end = pop(stack).toInt();
+          auto start = pop(stack).toInt();
+          auto substr = pop(stack).toStringRef();
+          auto string = pop(stack).toStringRef();
+
+          int64_t size = string.size();
+          if (start < 0) {
+            start = std::max(0L, size + start);
+          }
+          if (end < 0) {
+            end = std::max(0L, size + end + 1);
+          }
+
+          string = string.substr(start, end - start);
+
+          auto result = false;
+          if (string.length() >= substr.length()) {
+            result = !string.compare(0, substr.length(), substr);
+          }
+          push(stack, result);
+          return 0;
+        }),
+
+    Operator(
         "aten::expandtabs(str self, int tabsize=8) -> str",
         [](Stack& stack) {
           auto tabsize = pop(stack).toInt();
@@ -2433,6 +2459,145 @@ RegisterOperators reg2({
           return 0;
         }),
 
+    Operator(
+        "aten::partition(str self, str separator) -> (str, str, str)",
+        [](Stack& stack) {
+          auto separator = pop(stack).toStringRef();
+          auto string = pop(stack).toStringRef();
+
+          auto pos = string.find(separator, 0);
+          if (pos == std::string::npos) {
+            pos = string.size();
+            separator = "";
+          }
+          auto pre_partition = string.substr(0, pos);
+          auto post_partition =
+              string.substr(pos + separator.size(), string.size());
+
+          push(stack, pre_partition);
+          push(stack, separator);
+          push(stack, post_partition);
+
+          return 0;
+        }),
+
+    Operator(
+        "aten::rpartition(str self, str separator) -> (str, str, str)",
+        [](Stack& stack) {
+          auto separator = pop(stack).toStringRef();
+          auto string = pop(stack).toStringRef();
+
+          auto pos = string.find(separator, 0);
+          auto rpos = pos;
+          do {
+            pos = rpos;
+            rpos = string.find(separator, pos + 1);
+          } while (rpos != std::string::npos);
+
+          if (pos == std::string::npos) {
+            pos = 0;
+            separator = "";
+          }
+
+          auto pre_partition = string.substr(0, pos);
+          auto post_partition =
+              string.substr(pos + separator.size(), string.size());
+
+          push(stack, pre_partition);
+          push(stack, separator);
+          push(stack, post_partition);
+
+          return 0;
+        }),
+
+    Operator(
+        "aten::split(str self, str separator=' ', int max=-1) -> str[]",
+        [](Stack& stack) {
+          auto max = pop(stack).toInt();
+          auto separator = pop(stack).toStringRef();
+          auto string = pop(stack).toStringRef();
+
+          std::string::size_type prev_pos = 0;
+          std::string::size_type pos = 0;
+          std::vector<IValue> splits;
+          auto count = 0;
+          while ((pos = string.find(separator, pos)) != std::string::npos) {
+            count++;
+            if (max >= 0 && count > max) {
+              break;
+            } else {
+              splits.emplace_back(string.substr(prev_pos, pos - prev_pos));
+            }
+            pos += separator.size();
+            prev_pos = pos;
+          }
+          splits.emplace_back(
+              string.substr(prev_pos, string.size() - prev_pos));
+          push(stack, splits);
+          return 0;
+        }),
+
+    Operator(
+        "aten::rsplit(str self, str separator=' ', int max=-1) -> str[]",
+        [](Stack& stack) {
+          auto max = pop(stack).toInt();
+          auto separator = pop(stack).toStringRef();
+          auto string = pop(stack).toStringRef();
+          std::reverse(separator.begin(), separator.end());
+          std::reverse(string.begin(), string.end());
+
+          std::string::size_type prev_pos = 0;
+          std::string::size_type pos = 0;
+          std::vector<IValue> splits;
+          auto count = 0;
+          while ((pos = string.find(separator, pos)) != std::string::npos) {
+            count++;
+            if (max >= 0 && count > max) {
+              break;
+            } else {
+              auto substr = string.substr(prev_pos, pos - prev_pos);
+              std::reverse(substr.begin(), substr.end());
+              splits.emplace(splits.begin(), substr);
+            }
+            pos += separator.size();
+            prev_pos = pos;
+          }
+          auto substr = string.substr(prev_pos, string.size() - prev_pos);
+          std::reverse(substr.begin(), substr.end());
+          splits.emplace(splits.begin(), substr);
+          push(stack, splits);
+          return 0;
+        }),
+
+    Operator(
+        "aten::splitlines(str self, bool keepends=False) -> str[]",
+        [](Stack& stack) {
+          auto keepends = pop(stack).toBool();
+          auto string = pop(stack).toStringRef();
+          std::string delimiters =
+              "\n\r\r\n\v\x0b\f\x0c\x1c\x1d\x1e\x85\u2028\u2029";
+          std::vector<IValue> splits;
+
+          auto prev_pos = 0;
+          auto pos = 0;
+          while ((pos = string.find_first_of(delimiters, pos)) !=
+                 std::string::npos) {
+            splits.emplace_back(string.substr(prev_pos, pos - prev_pos));
+            if (keepends) {
+              splits.emplace_back(string.substr(pos, 1));
+            }
+            pos++;
+            prev_pos = pos;
+          }
+          if (prev_pos != string.size()) {
+            splits.emplace_back(
+                string.substr(prev_pos, string.size() - prev_pos));
+          }
+
+          push(stack, splits);
+          return 0;
+        }),
+
 // python string is methods return false if empty
 #define DEFINE_STRING_IS_OP(op_name, char_op)                      \
   Operator(#op_name "(str self) -> bool", [](Stack& stack) {       \
@@ -2466,6 +2631,13 @@ RegisterOperators reg2({
 
     DEFINE_STRING_CHAR_MAP_OP(aten::upper, std::toupper),
     DEFINE_STRING_CHAR_MAP_OP(aten::lower, std::tolower),
+    DEFINE_STRING_CHAR_MAP_OP(aten::swapcase, ([](char c) {
+                                if (c == static_cast<char>(std::toupper(c))) {
+                                  return static_cast<char>(std::tolower(c));
+                                } else {
+                                  return static_cast<char>(std::toupper(c));
+                                }
+                              })),
 
     Operator(
         "prim::StringIndex(str string, int index) -> str",
