@@ -9,6 +9,8 @@
 #include <tuple>
 #include <vector>
 
+#include <Python.h>
+
 namespace torch {
 namespace jit {
 namespace script {
@@ -508,6 +510,13 @@ std::shared_ptr<SugaredValue> toSugaredValue(
     auto& pyCu = CompilationUnit::_get_python_cu();
     if (auto classType = pyCu.get_class(c10::QualifiedName(qualifiedName))) {
       return std::make_shared<ClassValue>(classType);
+    }
+    // Use a heuristic here to identify NamedTuple instances:
+    // 1) must be a subclass of tuple
+    // 2) Has an attribute "_fields"
+    auto tuple_type = (PyObject*)&((&PyTuple_Type)->ob_base);
+    if (PyObject_IsSubclass(obj.ptr(), tuple_type) && py::hasattr(obj, "_fields")) {
+      throw ErrorReport(loc) << "NamedTuple is currently not supported in TorchScript";
     }
   }
 
